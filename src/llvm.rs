@@ -9,7 +9,7 @@ use llvm_sys::transforms::pass_manager_builder::*;
 use llvm_sys::{LLVMBuilder, LLVMIntPredicate, LLVMModule};
 
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_uint, c_ulonglong};
+use std::os::raw::{c_char, c_uint, c_ulonglong};
 use std::ptr::null_mut;
 use std::str;
 
@@ -35,12 +35,12 @@ impl Module {
     /// Create a new CString associated with this LLVMModule,
     /// and return a pointer that can be passed to LLVM APIs.
     /// Assumes s is pure-ASCII.
-    fn new_string_ptr(&mut self, s: &str) -> *const i8 {
+    fn new_string_ptr(&mut self, s: &str) -> *const c_char {
         self.new_mut_string_ptr(s)
     }
 
     // TODO: ideally our pointers wouldn't be mutable.
-    fn new_mut_string_ptr(&mut self, s: &str) -> *mut i8 {
+    fn new_mut_string_ptr(&mut self, s: &str) -> *mut c_char {
         let cstring = CString::new(s).unwrap();
         let ptr = cstring.as_ptr() as *mut _;
         self.strings.push(cstring);
@@ -914,7 +914,7 @@ struct TargetMachine {
 }
 
 impl TargetMachine {
-    fn new(target_triple: *const i8) -> Result<Self, String> {
+    fn new(target_triple: *const c_char) -> Result<Self, String> {
         let mut target = null_mut();
         let mut err_msg_ptr = null_mut();
         unsafe {
@@ -981,7 +981,7 @@ pub fn write_object_file(module: &mut Module, path: &str) -> Result<(), String> 
         let result = LLVMTargetMachineEmitToFile(
             target_machine.tm,
             module.module,
-            module.new_string_ptr(path) as *mut i8,
+            module.new_string_ptr(path) as *mut c_char,
             LLVMCodeGenFileType::LLVMObjectFile,
             &mut obj_error,
         );
